@@ -165,4 +165,31 @@ public class CertificationRequestControllerTest {
                 .param(EMPLOYEE_ID_PARAM, "0"))
                 .hasStatus(HttpStatus.BAD_REQUEST);
     }
+
+    @Test
+    void getEmployeeCertificationByReferenceNo_success()  {
+        EmployeeCertificationDTO dto = new EmployeeCertificationDTO(
+                HR_DEPARTMENT, PROOF_OF_EMPLOYMENT, new Date(), 1L, Status.OPEN.name()
+        );
+
+        when(certificationRequestService.getEmployeeCertificationByReferenceNo(1L))
+                .thenReturn(dto);
+
+        assertThat(mockMvc.get().uri("/certification-requests/1"))
+                .hasStatusOk()
+                .bodyJson()
+                .hasPathSatisfying("$.address_to", v -> assertThat(v).asString().isEqualTo(HR_DEPARTMENT))
+                .hasPathSatisfying("$.purpose", v -> assertThat(v).asString().isEqualTo(PROOF_OF_EMPLOYMENT))
+                .hasPathSatisfying("$.status", v -> assertThat(v).asString().isEqualTo(Status.OPEN.name()))
+                .hasPathSatisfying("$.reference_no", v -> assertThat(v).isEqualTo(1));
+    }
+
+    @Test
+    void getEmployeeCertificationByReferenceNo_notFound_returnsNotFound()  {
+        when(certificationRequestService.getEmployeeCertificationByReferenceNo(99L))
+                .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Certification request not found"));
+
+        assertThat(mockMvc.get().uri("/certification-requests/99"))
+                .hasStatus(HttpStatus.NOT_FOUND);
+    }
 }
