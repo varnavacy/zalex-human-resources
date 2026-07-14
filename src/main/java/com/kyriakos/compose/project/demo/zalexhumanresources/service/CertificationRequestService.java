@@ -11,11 +11,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Date;
+
+import static com.kyriakos.compose.project.demo.zalexhumanresources.specifications.CertificationRequestSpecifications.*;
 
 @Service
 public class CertificationRequestService {
@@ -57,17 +60,30 @@ public class CertificationRequestService {
     In addition, capped the pagination size to 10 (we can agree to a bigger if we want)
     but we don't want to allow a huge value as then define the purpose of pagination
      */
-    public Page<EmployeeCertificationDTO> getEmployeeCertifications(Long employeeId, int page,
-                                                                    int size, SortField sortBy, SortDirection sortDirection) {
+    public Page<EmployeeCertificationDTO> getEmployeeCertifications(Long employeeId, int page, int size,
+                                                                    SortField sortBy, SortDirection sortDirection,
+                                                                    Long referenceNo, String addressTo, Status status) {
         if (page < 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Page number cannot be negative");
         }
         verifyEmployeeId(employeeId);
+
+        Specification<CertificationRequest> spec = getSpecifications(employeeId,referenceNo,addressTo,status);
+
         int cappedSize = Math.min(size, 10);
         Sort sort = Sort.by(Sort.Direction.fromString(sortDirection.name()), sortBy.getFieldName());
         Pageable pageable = PageRequest.of(page, cappedSize, sort);
-        return certificationRequestRepository.findByEmployeeId(employeeId, pageable)
+
+        return certificationRequestRepository.findAll(spec, pageable)
                 .map(this::toDTO);
+    }
+
+    private Specification<CertificationRequest> getSpecifications(Long employeeId, Long referenceNo, String addressTo, Status status) {
+        Specification<CertificationRequest> spec = Specification.where(hasEmployeeId(employeeId));
+        if (referenceNo != null) spec = spec.and(hasReferenceNo(referenceNo));
+        if (addressTo != null) spec = spec.and(addressToContains(addressTo));
+        if (status != null)    spec = spec.and(hasStatus(status));
+        return spec;
     }
 
     private void verifyCertificationRequest(CertificationRequest certificationRequest) {

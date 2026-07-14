@@ -22,8 +22,10 @@ import java.util.Date;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 
@@ -158,11 +160,11 @@ public class CertificationRequestServiceTest {
 
         Page<CertificationRequest> mockPage = new PageImpl<>(List.of(cert1, cert2));
 
-        when(certificationRequestRepository.findByEmployeeId(eq(employeeId), any()))
+        when(certificationRequestRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(mockPage);
 
         Page<EmployeeCertificationDTO> result = certificationRequestService.getEmployeeCertifications(employeeId,
-                0, 10, SortField.ISSUED_ON, SortDirection.DESC);
+                0, 10, SortField.ISSUED_ON, SortDirection.DESC, null, null, null);
 
         assertNotNull(result);
         assertEquals(2, result.getTotalElements());
@@ -180,12 +182,99 @@ public class CertificationRequestServiceTest {
     }
 
     @Test
+    void getEmployeeCertifications_filterByStatus_returnsMatchingResults() {
+        Long employeeId = 123456L;
+
+        CertificationRequest cert = CertificationRequest.builder()
+                .addressTo(HR_DEPARTMENT)
+                .purpose(PROOF_OF_EMPLOYMENT)
+                .employeeId(employeeId)
+                .status(Status.OPEN)
+                .issuedOn(new Date())
+                .build();
+
+        Page<CertificationRequest> mockPage = new PageImpl<>(List.of(cert));
+
+        when(certificationRequestRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(mockPage);
+
+        Page<EmployeeCertificationDTO> result = certificationRequestService.getEmployeeCertifications(
+                employeeId, 0, 10, SortField.ISSUED_ON, SortDirection.DESC, null, null, Status.OPEN);
+
+        assertEquals(1, result.getTotalElements());
+        assertEquals(Status.OPEN.name(), result.getContent().getFirst().status());
+    }
+
+    @Test
+    void getEmployeeCertifications_filterByReferenceNo_returnsMatchingResult() {
+        Long employeeId = 123456L;
+
+        CertificationRequest cert = CertificationRequest.builder()
+                .referenceNo(5L)
+                .addressTo(HR_DEPARTMENT)
+                .purpose(PROOF_OF_EMPLOYMENT)
+                .employeeId(employeeId)
+                .status(Status.OPEN)
+                .issuedOn(new Date())
+                .build();
+
+        Page<CertificationRequest> mockPage = new PageImpl<>(List.of(cert));
+
+        when(certificationRequestRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(mockPage);
+
+        Page<EmployeeCertificationDTO> result = certificationRequestService.getEmployeeCertifications(
+                employeeId, 0, 10, SortField.ISSUED_ON, SortDirection.DESC, 5L, null, null);
+
+        assertEquals(1, result.getTotalElements());
+        assertEquals(5L, result.getContent().getFirst().referenceNo());
+    }
+
+    @Test
+    void getEmployeeCertifications_filterByAddressTo_returnsMatchingResults() {
+        Long employeeId = 123456L;
+
+        CertificationRequest cert = CertificationRequest.builder()
+                .addressTo("Embassy of Neptune")
+                .purpose(PROOF_OF_EMPLOYMENT)
+                .employeeId(employeeId)
+                .status(Status.OPEN)
+                .issuedOn(new Date())
+                .build();
+
+        Page<CertificationRequest> mockPage = new PageImpl<>(List.of(cert));
+
+        when(certificationRequestRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(mockPage);
+
+        Page<EmployeeCertificationDTO> result = certificationRequestService.getEmployeeCertifications(
+                employeeId, 0, 10, SortField.ISSUED_ON, SortDirection.DESC, null, "Embassy", null);
+
+        assertEquals(1, result.getTotalElements());
+        assertEquals("Embassy of Neptune", result.getContent().getFirst().addressTo());
+    }
+
+    @Test
+    void getEmployeeCertifications_noFiltersMatch_returnsEmptyPage() {
+        Long employeeId = 123456L;
+
+        when(certificationRequestRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(Page.empty());
+
+        Page<EmployeeCertificationDTO> result = certificationRequestService.getEmployeeCertifications(
+                employeeId, 0, 10, SortField.ISSUED_ON, SortDirection.DESC, null, "NonExistent", null);
+
+        assertEquals(0, result.getTotalElements());
+        assertTrue(result.getContent().isEmpty());
+    }
+
+    @Test
     void getEmployeeCertifications_invalidEmployeeId_throwsBadRequest() {
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
                 () -> certificationRequestService.getEmployeeCertifications(null,
-                        0, 10, SortField.ISSUED_ON, SortDirection.DESC)
+                        0, 10, SortField.ISSUED_ON, SortDirection.DESC, null, null, null)
         );
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
@@ -197,7 +286,7 @@ public class CertificationRequestServiceTest {
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
                 () -> certificationRequestService.getEmployeeCertifications(0L,
-                        0, 10, SortField.ISSUED_ON, SortDirection.DESC)
+                        0, 10, SortField.ISSUED_ON, SortDirection.DESC, null, null, null)
         );
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
         assertEquals("Employee id field is required", exception.getReason());
@@ -208,7 +297,7 @@ public class CertificationRequestServiceTest {
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
                 () -> certificationRequestService.getEmployeeCertifications(1L,
-                        -1, 10, SortField.ISSUED_ON, SortDirection.DESC)
+                        -1, 10, SortField.ISSUED_ON, SortDirection.DESC, null, null, null)
         );
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());

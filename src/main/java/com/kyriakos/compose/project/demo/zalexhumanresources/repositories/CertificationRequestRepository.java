@@ -4,8 +4,8 @@ import com.kyriakos.compose.project.demo.zalexhumanresources.model.Certification
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-public interface CertificationRequestRepository extends JpaRepository<CertificationRequest, Long> {
-
-    Page<CertificationRequest> findByEmployeeId(Long employeeId, Pageable pageable);
+public interface CertificationRequestRepository extends JpaRepository<CertificationRequest, Long>,
+        JpaSpecificationExecutor<CertificationRequest> {
 }
