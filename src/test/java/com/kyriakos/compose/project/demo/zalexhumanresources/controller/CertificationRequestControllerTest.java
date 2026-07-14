@@ -192,4 +192,69 @@ public class CertificationRequestControllerTest {
         assertThat(mockMvc.get().uri("/certification-requests/99"))
                 .hasStatus(HttpStatus.NOT_FOUND);
     }
+
+    @Test
+    void updatePurpose_success() {
+        EmployeeCertificationDTO response = new EmployeeCertificationDTO(
+                HR_DEPARTMENT, "New Purpose", new Date(), 1L, Status.OPEN.name()
+        );
+
+        when(certificationRequestService.updatePurposeOnCertificationRequests(any(), any(), any()))
+                .thenReturn(response);
+
+        Map<String, String> requestBody = Map.of(PURPOSE, "New Purpose");
+
+        assertThat(mockMvc.patch().uri("/certification-requests/1")
+                .param(EMPLOYEE_ID_PARAM, "123456")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(requestBody)))
+                .hasStatusOk()
+                .bodyJson()
+                .hasPathSatisfying("$.purpose", v -> assertThat(v).asString().isEqualTo("New Purpose"))
+                .hasPathSatisfying("$.address_to", v -> assertThat(v).asString().isEqualTo(HR_DEPARTMENT))
+                .hasPathSatisfying("$.status", v -> assertThat(v).asString().isEqualTo(Status.OPEN.name()))
+                .hasPathSatisfying("$.reference_no", v -> assertThat(v).isEqualTo(1));
+    }
+
+    @Test
+    void updatePurpose_notFound_returnsNotFound() {
+        when(certificationRequestService.updatePurposeOnCertificationRequests(any(), any(), any()))
+                .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Certification request not found"));
+
+        Map<String, String> requestBody = Map.of(PURPOSE, "New Purpose");
+
+        assertThat(mockMvc.patch().uri("/certification-requests/99")
+                .param(EMPLOYEE_ID_PARAM, "123456")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(requestBody)))
+                .hasStatus(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void updatePurpose_wrongEmployee_returnsForbidden() {
+        when(certificationRequestService.updatePurposeOnCertificationRequests(any(), any(), any()))
+                .thenThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not authorized to update this certification request"));
+
+        Map<String, String> requestBody = Map.of(PURPOSE, "New Purpose");
+
+        assertThat(mockMvc.patch().uri("/certification-requests/1")
+                .param(EMPLOYEE_ID_PARAM, "999")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(requestBody)))
+                .hasStatus(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void updatePurpose_emptyPurpose_returnsBadRequest() {
+        when(certificationRequestService.updatePurposeOnCertificationRequests(any(), any(), any()))
+                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Purpose field is required"));
+
+        Map<String, String> requestBody = Map.of(PURPOSE, "");
+
+        assertThat(mockMvc.patch().uri("/certification-requests/1")
+                .param(EMPLOYEE_ID_PARAM, "123456")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(requestBody)))
+                .hasStatus(HttpStatus.BAD_REQUEST);
+    }
 }

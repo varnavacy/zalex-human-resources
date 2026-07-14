@@ -3,6 +3,7 @@ package com.kyriakos.compose.project.demo.zalexhumanresources.service;
 import com.kyriakos.compose.project.demo.zalexhumanresources.dto.EmployeeCertificationDTO;
 import com.kyriakos.compose.project.demo.zalexhumanresources.model.CertificationRequest;
 import com.kyriakos.compose.project.demo.zalexhumanresources.model.Status;
+import com.kyriakos.compose.project.demo.zalexhumanresources.dto.UpdateCertificationRequestDTO;
 import com.kyriakos.compose.project.demo.zalexhumanresources.repositories.CertificationRequestRepository;
 import com.kyriakos.compose.project.demo.zalexhumanresources.sorting.SortDirection;
 import com.kyriakos.compose.project.demo.zalexhumanresources.sorting.SortField;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Date;
+import java.util.Optional;
 
 import static com.kyriakos.compose.project.demo.zalexhumanresources.specifications.CertificationRequestSpecifications.*;
 
@@ -82,6 +84,19 @@ public class CertificationRequestService {
         return certificationRequestRepository.findById(referenceNo)
                 .map(this::toDTO)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Certification request not found"));
+    }
+
+    public EmployeeCertificationDTO updatePurposeOnCertificationRequests(Long referenceNo, Long employeeId, UpdateCertificationRequestDTO updateCertificationRequestDTO) {
+        requireNonBlank(updateCertificationRequestDTO.purpose(), "Purpose");
+        Optional<CertificationRequest> cert = certificationRequestRepository.findById(referenceNo);
+        if (cert.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Certification request not found");
+        }
+        if (employeeId != null && !employeeId.equals(cert.get().getEmployeeId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not authorized to update this certification request");
+        }
+        cert.get().setPurpose(updateCertificationRequestDTO.purpose());
+        return toDTO(certificationRequestRepository.save(cert.get()));
     }
 
     private Specification<CertificationRequest> getSpecifications(Long employeeId, Long referenceNo, String addressTo, Status status) {

@@ -2,6 +2,7 @@ package com.kyriakos.compose.project.demo.zalexhumanresources.service;
 
 
 import com.kyriakos.compose.project.demo.zalexhumanresources.dto.EmployeeCertificationDTO;
+import com.kyriakos.compose.project.demo.zalexhumanresources.dto.UpdateCertificationRequestDTO;
 import com.kyriakos.compose.project.demo.zalexhumanresources.model.CertificationRequest;
 import com.kyriakos.compose.project.demo.zalexhumanresources.model.Status;
 import com.kyriakos.compose.project.demo.zalexhumanresources.repositories.CertificationRequestRepository;
@@ -338,6 +339,86 @@ public class CertificationRequestServiceTest {
 
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
         assertEquals("Certification request not found", exception.getReason());
+    }
+
+    @Test
+    void updatePurpose_success() {
+        CertificationRequest cert = CertificationRequest.builder()
+                .referenceNo(1L)
+                .addressTo(HR_DEPARTMENT)
+                .purpose(PROOF_OF_EMPLOYMENT)
+                .employeeId(123456L)
+                .status(Status.OPEN)
+                .issuedOn(new Date())
+                .build();
+
+        CertificationRequest updated = CertificationRequest.builder()
+                .referenceNo(1L)
+                .addressTo(HR_DEPARTMENT)
+                .purpose("New Purpose")
+                .employeeId(123456L)
+                .status(Status.OPEN)
+                .issuedOn(new Date())
+                .build();
+
+        when(certificationRequestRepository.findById(1L)).thenReturn(Optional.of(cert));
+        when(certificationRequestRepository.save(any(CertificationRequest.class))).thenReturn(updated);
+
+        EmployeeCertificationDTO result = certificationRequestService.updatePurposeOnCertificationRequests(
+                1L, 123456L, new UpdateCertificationRequestDTO("New Purpose"));
+
+        assertNotNull(result);
+        assertEquals("New Purpose", result.purpose());
+        assertEquals(HR_DEPARTMENT, result.addressTo());
+        assertEquals(Status.OPEN.name(), result.status());
+    }
+
+    @Test
+    void updatePurpose_notFound_throwsNotFound() {
+        when(certificationRequestRepository.findById(99L)).thenReturn(Optional.empty());
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> certificationRequestService.updatePurposeOnCertificationRequests(
+                        99L, 123456L, new UpdateCertificationRequestDTO("New Purpose"))
+        );
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+        assertEquals("Certification request not found", exception.getReason());
+    }
+
+    @Test
+    void updatePurpose_wrongEmployee_throwsForbidden() {
+        CertificationRequest cert = CertificationRequest.builder()
+                .referenceNo(1L)
+                .addressTo(HR_DEPARTMENT)
+                .purpose(PROOF_OF_EMPLOYMENT)
+                .employeeId(123456L)
+                .status(Status.OPEN)
+                .issuedOn(new Date())
+                .build();
+
+        when(certificationRequestRepository.findById(1L)).thenReturn(Optional.of(cert));
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> certificationRequestService.updatePurposeOnCertificationRequests(
+                        1L, 999L, new UpdateCertificationRequestDTO("New Purpose"))
+        );
+
+        assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
+    }
+
+    @Test
+    void updatePurpose_emptyPurpose_throwsBadRequest() {
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> certificationRequestService.updatePurposeOnCertificationRequests(
+                        1L, 123456L, new UpdateCertificationRequestDTO(""))
+        );
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+        assertEquals("Purpose field is required", exception.getReason());
     }
 
 }
