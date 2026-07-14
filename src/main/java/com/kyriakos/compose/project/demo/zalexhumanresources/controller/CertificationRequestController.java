@@ -2,6 +2,7 @@ package com.kyriakos.compose.project.demo.zalexhumanresources.controller;
 
 import com.kyriakos.compose.project.demo.zalexhumanresources.dto.EmployeeCertificationDTO;
 import com.kyriakos.compose.project.demo.zalexhumanresources.model.CertificationRequest;
+import com.kyriakos.compose.project.demo.zalexhumanresources.model.Status;
 import com.kyriakos.compose.project.demo.zalexhumanresources.service.CertificationRequestService;
 import com.kyriakos.compose.project.demo.zalexhumanresources.sorting.SortDirection;
 import com.kyriakos.compose.project.demo.zalexhumanresources.sorting.SortField;
@@ -35,8 +36,12 @@ public class CertificationRequestController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "ISSUED_ON" ) SortField sortBy,
-            @RequestParam(defaultValue = "DESC" ) SortDirection sortDirection
+            @RequestParam(defaultValue = "DESC" ) SortDirection sortDirection,
+            @RequestParam(required = false) Long referenceNo,
+            @RequestParam(required = false) String addressTo,
+            @RequestParam(required = false) Status status
     ) {
-        return certificationRequestService.getEmployeeCertifications(employeeId, page, size, sortBy, sortDirection).getContent();
+        return certificationRequestService.getEmployeeCertifications(employeeId, page, size, sortBy, sortDirection
+                , referenceNo, addressTo, status).getContent();
     }
 }

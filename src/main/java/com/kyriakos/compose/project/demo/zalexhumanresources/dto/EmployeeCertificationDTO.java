@@ -14,6 +14,7 @@ public record EmployeeCertificationDTO (
         @JsonProperty("issued_on")
         @JsonFormat(pattern = "d/M/yyyy")
         Date issuedOn,
+        @JsonProperty("reference_no")
         Long referenceNo,
         String status
 ){
