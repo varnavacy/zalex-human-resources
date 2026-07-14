@@ -3,6 +3,7 @@ package com.kyriakos.compose.project.demo.zalexhumanresources.controller;
 import com.kyriakos.compose.project.demo.zalexhumanresources.dto.EmployeeCertificationDTO;
 import com.kyriakos.compose.project.demo.zalexhumanresources.model.CertificationRequest;
 import com.kyriakos.compose.project.demo.zalexhumanresources.model.Status;
+import com.kyriakos.compose.project.demo.zalexhumanresources.dto.UpdateCertificationRequestDTO;
 import com.kyriakos.compose.project.demo.zalexhumanresources.service.CertificationRequestService;
 import com.kyriakos.compose.project.demo.zalexhumanresources.sorting.SortDirection;
 import com.kyriakos.compose.project.demo.zalexhumanresources.sorting.SortField;
@@ -56,4 +57,15 @@ public class CertificationRequestController {
     ) {
         return certificationRequestService.getEmployeeCertificationByReferenceNo(referenceNo);
     }
+
+
+    @PatchMapping("/certification-requests/{referenceNo}")
+    public EmployeeCertificationDTO updatePurposeOnCertificationRequests(
+            @PathVariable Long referenceNo,
+            @RequestParam Long employeeId,
+            @RequestBody UpdateCertificationRequestDTO updateCertificationRequestDTO
+    ) {
+        return certificationRequestService.updatePurposeOnCertificationRequests(referenceNo, employeeId, updateCertificationRequestDTO);
+    }
+
 }
