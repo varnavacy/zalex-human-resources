@@ -44,4 +44,16 @@ public class CertificationRequestController {
         return certificationRequestService.getEmployeeCertifications(employeeId, page, size, sortBy, sortDirection
                 , referenceNo, addressTo, status).getContent();
     }
+
+    /*
+    returning the details of a single certification request.
+    currently we return EmployeeCertificationDTO, but in the future when we add more fields
+    e.g. description, comments etc we can create a dedicate DTO for this
+     */
+    @GetMapping("/certification-requests/{referenceNo}")
+    public EmployeeCertificationDTO getEmployeeCertificationsByReferenceNo(
+            @PathVariable Long referenceNo
+    ) {
+        return certificationRequestService.getEmployeeCertificationByReferenceNo(referenceNo);
+    }
 }

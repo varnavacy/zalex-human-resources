@@ -78,6 +78,12 @@ public class CertificationRequestService {
                 .map(this::toDTO);
     }
 
+    public EmployeeCertificationDTO getEmployeeCertificationByReferenceNo(Long referenceNo) {
+        return certificationRequestRepository.findById(referenceNo)
+                .map(this::toDTO)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Certification request not found"));
+    }
+
     private Specification<CertificationRequest> getSpecifications(Long employeeId, Long referenceNo, String addressTo, Status status) {
         Specification<CertificationRequest> spec = Specification.where(hasEmployeeId(employeeId));
         if (referenceNo != null) spec = spec.and(hasReferenceNo(referenceNo));

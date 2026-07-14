@@ -20,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import org.springframework.data.domain.Pageable;
@@ -302,6 +303,41 @@ public class CertificationRequestServiceTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
         assertEquals("Page number cannot be negative", exception.getReason());
+    }
+
+    @Test
+    void getEmployeeCertificationByReferenceNo_success() {
+        CertificationRequest cert = CertificationRequest.builder()
+                .referenceNo(1L)
+                .addressTo(HR_DEPARTMENT)
+                .purpose(PROOF_OF_EMPLOYMENT)
+                .employeeId(123456L)
+                .status(Status.OPEN)
+                .issuedOn(new Date())
+                .build();
+
+        when(certificationRequestRepository.findById(1L)).thenReturn(Optional.of(cert));
+
+        EmployeeCertificationDTO result = certificationRequestService.getEmployeeCertificationByReferenceNo(1L);
+
+        assertNotNull(result);
+        assertEquals(HR_DEPARTMENT, result.addressTo());
+        assertEquals(PROOF_OF_EMPLOYMENT, result.purpose());
+        assertEquals(Status.OPEN.name(), result.status());
+        assertEquals(1L, result.referenceNo());
+    }
+
+    @Test
+    void getEmployeeCertificationByReferenceNo_notFound_throwsNotFound() {
+        when(certificationRequestRepository.findById(99L)).thenReturn(Optional.empty());
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> certificationRequestService.getEmployeeCertificationByReferenceNo(99L)
+        );
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+        assertEquals("Certification request not found", exception.getReason());
     }
 
 }
