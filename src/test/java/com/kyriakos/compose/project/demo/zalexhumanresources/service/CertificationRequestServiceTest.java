@@ -27,7 +27,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import org.mockito.ArgumentCaptor;
+
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 
@@ -35,7 +38,8 @@ import static org.mockito.Mockito.when;
 public class CertificationRequestServiceTest {
 
     public static final String HR_DEPARTMENT = "HR Department";
-    public static final String PROOF_OF_EMPLOYMENT = "Proof of employment";
+    public static final String PROOF_OF_EMPLOYMENT = "Proof of employment for visa application to the embassy";
+    public static final String UPDATED_PURPOSE = "Updated purpose for the certification request resubmission";
     @Mock
     private CertificationRequestRepository certificationRequestRepository;
 
@@ -109,6 +113,23 @@ public class CertificationRequestServiceTest {
     }
 
     @Test
+    void createCertificationRequest_purposeTooShort_throwsBadRequest() {
+        CertificationRequest request = CertificationRequest.builder()
+                .addressTo(HR_DEPARTMENT)
+                .purpose("Too short")
+                .employeeId(1L)
+                .build();
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> certificationRequestService.createCertificationRequest(request)
+        );
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+        assertEquals("Purpose must be at least 50 characters", exception.getReason());
+    }
+
+    @Test
     void createCertificationRequest_missingAddressTo_throwsBadRequest() {
         CertificationRequest request = CertificationRequest.builder()
                 .purpose(PROOF_OF_EMPLOYMENT)
@@ -122,6 +143,49 @@ public class CertificationRequestServiceTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
         assertEquals("Address to field is required", exception.getReason());
+    }
+
+    @Test
+    void createCertificationRequest_multilineAddressTo_success() {
+        String multilineAddress = "HR Department\nBuilding 3, Floor 2\nAthens, Greece";
+
+        CertificationRequest request = CertificationRequest.builder()
+                .addressTo(multilineAddress)
+                .purpose(PROOF_OF_EMPLOYMENT)
+                .employeeId(1L)
+                .build();
+
+        CertificationRequest savedRequest = CertificationRequest.builder()
+                .referenceNo(1L)
+                .addressTo(multilineAddress)
+                .purpose(PROOF_OF_EMPLOYMENT)
+                .issuedOn(new Date())
+                .status(Status.OPEN)
+                .employeeId(1L)
+                .build();
+
+        when(certificationRequestRepository.save(any(CertificationRequest.class))).thenReturn(savedRequest);
+
+        EmployeeCertificationDTO result = certificationRequestService.createCertificationRequest(request);
+
+        assertNotNull(result);
+        assertEquals(multilineAddress, result.addressTo());
+    }
+
+    @Test
+    void createCertificationRequest_invalidAddressTo_throwsBadRequest() {
+        CertificationRequest request = CertificationRequest.builder()
+                .addressTo("HR Department @#$")
+                .purpose(PROOF_OF_EMPLOYMENT)
+                .employeeId(1L)
+                .build();
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> certificationRequestService.createCertificationRequest(request)
+        );
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
     }
 
     @Test
@@ -295,6 +359,20 @@ public class CertificationRequestServiceTest {
     }
 
     @Test
+    void getEmployeeCertifications_pageSizeCappedAt10() {
+        when(certificationRequestRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(Page.empty());
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+
+        certificationRequestService.getEmployeeCertifications(
+                123456L, 0, 100, SortField.ISSUED_ON, SortDirection.DESC, null, null, null);
+
+        verify(certificationRequestRepository).findAll(any(Specification.class), pageableCaptor.capture());
+        assertEquals(10, pageableCaptor.getValue().getPageSize());
+    }
+
+    @Test
     void getEmployeeCertifications_negativePage_throwsBadRequest() {
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
@@ -355,7 +433,7 @@ public class CertificationRequestServiceTest {
         CertificationRequest updated = CertificationRequest.builder()
                 .referenceNo(1L)
                 .addressTo(HR_DEPARTMENT)
-                .purpose("New Purpose")
+                .purpose(UPDATED_PURPOSE)
                 .employeeId(123456L)
                 .status(Status.OPEN)
                 .issuedOn(new Date())
@@ -365,10 +443,10 @@ public class CertificationRequestServiceTest {
         when(certificationRequestRepository.save(any(CertificationRequest.class))).thenReturn(updated);
 
         EmployeeCertificationDTO result = certificationRequestService.updatePurposeOnCertificationRequests(
-                1L, 123456L, new UpdateCertificationRequestDTO("New Purpose"));
+                1L, 123456L, new UpdateCertificationRequestDTO(UPDATED_PURPOSE));
 
         assertNotNull(result);
-        assertEquals("New Purpose", result.purpose());
+        assertEquals(UPDATED_PURPOSE, result.purpose());
         assertEquals(HR_DEPARTMENT, result.addressTo());
         assertEquals(Status.OPEN.name(), result.status());
     }
@@ -380,7 +458,7 @@ public class CertificationRequestServiceTest {
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
                 () -> certificationRequestService.updatePurposeOnCertificationRequests(
-                        99L, 123456L, new UpdateCertificationRequestDTO("New Purpose"))
+                        99L, 123456L, new UpdateCertificationRequestDTO(UPDATED_PURPOSE))
         );
 
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
@@ -403,7 +481,7 @@ public class CertificationRequestServiceTest {
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
                 () -> certificationRequestService.updatePurposeOnCertificationRequests(
-                        1L, 999L, new UpdateCertificationRequestDTO("New Purpose"))
+                        1L, 999L, new UpdateCertificationRequestDTO(UPDATED_PURPOSE))
         );
 
         assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
@@ -419,6 +497,18 @@ public class CertificationRequestServiceTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
         assertEquals("Purpose field is required", exception.getReason());
+    }
+
+    @Test
+    void updatePurpose_purposeTooShort_throwsBadRequest() {
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> certificationRequestService.updatePurposeOnCertificationRequests(
+                        1L, 123456L, new UpdateCertificationRequestDTO("Too short"))
+        );
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+        assertEquals("Purpose must be at least 50 characters", exception.getReason());
     }
 
 }

@@ -29,12 +29,13 @@ public class CertificationRequestControllerTest {
 
     public static final String ADDRESS_TO = "address_to";
     public static final String HR_DEPARTMENT = "HR Department";
-    public static final String PROOF_OF_EMPLOYMENT = "Proof of employment";
+    public static final String PROOF_OF_EMPLOYMENT = "Proof of employment for visa application to the embassy";
     public static final String EMPLOYEE_ID = "employee_id";
     public static final String EMPLOYEE_ID_PARAM = "employeeId";
     public static final String PURPOSE = "purpose";
     public static final String STATUS = "status";
     public static final String ADDRESS_TO_PARAM = "addressTo";
+    public static final String UPDATED_PURPOSE = "Updated purpose for the certification request resubmission";
     @Autowired
     private MockMvcTester mockMvc;
 
@@ -86,6 +87,41 @@ public class CertificationRequestControllerTest {
     }
 
     @Test
+    void createCertificationRequest_purposeTooShort_returnsBadRequest() {
+        when(certificationRequestService.createCertificationRequest(any()))
+                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Purpose must be at least 50 characters"));
+
+        Map<String, String> requestBody = Map.of(
+                ADDRESS_TO, HR_DEPARTMENT,
+                PURPOSE, "Too short",
+                EMPLOYEE_ID, "1"
+        );
+
+        assertThat(mockMvc.post().uri("/certification-requests")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(requestBody)))
+                .hasStatus(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void createCertificationRequest_invalidAddressTo_returnsBadRequest() {
+        when(certificationRequestService.createCertificationRequest(any()))
+                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Address to field contains invalid characters. Only letters, numbers, spaces, and . , ' - are allowed"));
+
+        Map<String, String> requestBody = Map.of(
+                ADDRESS_TO, "HR @#$",
+                PURPOSE, PROOF_OF_EMPLOYMENT,
+                EMPLOYEE_ID, "1"
+        );
+
+        assertThat(mockMvc.post().uri("/certification-requests")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(requestBody)))
+                .hasStatus(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
     void getEmployeeCertifications_success()  {
         EmployeeCertificationDTO dto = new EmployeeCertificationDTO(
                 HR_DEPARTMENT, PROOF_OF_EMPLOYMENT, new Date(), 1L, "OPEN"
@@ -102,7 +138,7 @@ public class CertificationRequestControllerTest {
                 .bodyJson()
                 .hasPathSatisfying("$[0].address_to", v -> assertThat(v).asString().isEqualTo(HR_DEPARTMENT))
                 .hasPathSatisfying("$[0].status", v -> assertThat(v).asString().isEqualTo("OPEN"))
-                .hasPathSatisfying("$[0].address_to", v -> assertThat(v).asString().isEqualTo(HR_DEPARTMENT));
+                .hasPathSatisfying("$[0].purpose", v -> assertThat(v).asString().isEqualTo(PROOF_OF_EMPLOYMENT));
     }
 
     @Test
@@ -157,6 +193,12 @@ public class CertificationRequestControllerTest {
     }
 
     @Test
+    void getEmployeeCertifications_missingEmployeeId_returnsBadRequest()  {
+        assertThat(mockMvc.get().uri("/certification-requests"))
+                .hasStatus(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
     void getEmployeeCertifications_invalidEmployeeId_throwsBadRequest()  {
         when(certificationRequestService.getEmployeeCertifications(any(), anyInt(), anyInt(), any(), any(), any(), any(), any()))
                 .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Employee id field is required"));
@@ -196,13 +238,13 @@ public class CertificationRequestControllerTest {
     @Test
     void updatePurpose_success() {
         EmployeeCertificationDTO response = new EmployeeCertificationDTO(
-                HR_DEPARTMENT, "New Purpose", new Date(), 1L, Status.OPEN.name()
+                HR_DEPARTMENT, UPDATED_PURPOSE, new Date(), 1L, Status.OPEN.name()
         );
 
         when(certificationRequestService.updatePurposeOnCertificationRequests(any(), any(), any()))
                 .thenReturn(response);
 
-        Map<String, String> requestBody = Map.of(PURPOSE, "New Purpose");
+        Map<String, String> requestBody = Map.of(PURPOSE, UPDATED_PURPOSE);
 
         assertThat(mockMvc.patch().uri("/certification-requests/1")
                 .param(EMPLOYEE_ID_PARAM, "123456")
@@ -210,7 +252,7 @@ public class CertificationRequestControllerTest {
                 .content(objectMapper.writeValueAsString(requestBody)))
                 .hasStatusOk()
                 .bodyJson()
-                .hasPathSatisfying("$.purpose", v -> assertThat(v).asString().isEqualTo("New Purpose"))
+                .hasPathSatisfying("$.purpose", v -> assertThat(v).asString().isEqualTo(UPDATED_PURPOSE))
                 .hasPathSatisfying("$.address_to", v -> assertThat(v).asString().isEqualTo(HR_DEPARTMENT))
                 .hasPathSatisfying("$.status", v -> assertThat(v).asString().isEqualTo(Status.OPEN.name()))
                 .hasPathSatisfying("$.reference_no", v -> assertThat(v).isEqualTo(1));
@@ -221,7 +263,7 @@ public class CertificationRequestControllerTest {
         when(certificationRequestService.updatePurposeOnCertificationRequests(any(), any(), any()))
                 .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Certification request not found"));
 
-        Map<String, String> requestBody = Map.of(PURPOSE, "New Purpose");
+        Map<String, String> requestBody = Map.of(PURPOSE, UPDATED_PURPOSE);
 
         assertThat(mockMvc.patch().uri("/certification-requests/99")
                 .param(EMPLOYEE_ID_PARAM, "123456")
@@ -235,7 +277,7 @@ public class CertificationRequestControllerTest {
         when(certificationRequestService.updatePurposeOnCertificationRequests(any(), any(), any()))
                 .thenThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not authorized to update this certification request"));
 
-        Map<String, String> requestBody = Map.of(PURPOSE, "New Purpose");
+        Map<String, String> requestBody = Map.of(PURPOSE, UPDATED_PURPOSE);
 
         assertThat(mockMvc.patch().uri("/certification-requests/1")
                 .param(EMPLOYEE_ID_PARAM, "999")
@@ -250,6 +292,20 @@ public class CertificationRequestControllerTest {
                 .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Purpose field is required"));
 
         Map<String, String> requestBody = Map.of(PURPOSE, "");
+
+        assertThat(mockMvc.patch().uri("/certification-requests/1")
+                .param(EMPLOYEE_ID_PARAM, "123456")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(requestBody)))
+                .hasStatus(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void updatePurpose_purposeTooShort_returnsBadRequest() {
+        when(certificationRequestService.updatePurposeOnCertificationRequests(any(), any(), any()))
+                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Purpose must be at least 50 characters"));
+
+        Map<String, String> requestBody = Map.of(PURPOSE, "Too short");
 
         assertThat(mockMvc.patch().uri("/certification-requests/1")
                 .param(EMPLOYEE_ID_PARAM, "123456")

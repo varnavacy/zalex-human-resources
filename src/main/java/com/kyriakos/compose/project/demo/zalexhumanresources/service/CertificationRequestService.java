@@ -87,7 +87,7 @@ public class CertificationRequestService {
     }
 
     public EmployeeCertificationDTO updatePurposeOnCertificationRequests(Long referenceNo, Long employeeId, UpdateCertificationRequestDTO updateCertificationRequestDTO) {
-        requireNonBlank(updateCertificationRequestDTO.purpose(), "Purpose");
+        requireValidPurpose(updateCertificationRequestDTO.purpose());
         Optional<CertificationRequest> cert = certificationRequestRepository.findById(referenceNo);
         if (cert.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Certification request not found");
@@ -108,8 +108,8 @@ public class CertificationRequestService {
     }
 
     private void verifyCertificationRequest(CertificationRequest certificationRequest) {
-        requireNonBlank(certificationRequest.getPurpose(), "Purpose");
-        requireNonBlank(certificationRequest.getAddressTo(), "Address to");
+        requireValidPurpose(certificationRequest.getPurpose());
+        requireValidAddressTo(certificationRequest.getAddressTo());
         verifyEmployeeId(certificationRequest.getEmployeeId());
     }
 
@@ -119,9 +119,26 @@ public class CertificationRequestService {
         }
     }
 
-    private void requireNonBlank(String value, String fieldName) {
+    private void requireValidPurpose(String value) {
         if (value == null || value.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, fieldName + " field is required");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Purpose field is required");
+        }
+        if (value.length() < 50) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Purpose must be at least 50 characters");
+        }
+    }
+
+    /*
+    Added basic punctuation and spaces as make sense .e.g Embassy of U.S.
+    \n\r will handle multiple lines as this is a text area
+     */
+    private void requireValidAddressTo(String value) {
+        if (value == null || value.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Address to field is required");
+        }
+        if (!value.matches("^[a-zA-Z0-9 .,'\n\r-]+$")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Address to field contains invalid characters. Only letters, numbers, spaces, and . , ' - are allowed");
         }
     }
 
