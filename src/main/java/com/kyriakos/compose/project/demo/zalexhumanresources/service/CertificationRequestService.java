@@ -27,7 +27,9 @@ import static com.kyriakos.compose.project.demo.zalexhumanresources.specificatio
 @Service
 public class CertificationRequestService {
 
-    // set it as static final so it will compile once when the class is load and not with every request to validate the address to
+    /* set it as static final so it compiles once when the class is loads and not with every
+     request to validate the address to
+     */
     private static final Pattern ADDRESS_TO_PATTERN = Pattern.compile("^[a-zA-Z0-9 .,'\n\r-]+$");
 
     private final CertificationRequestRepository certificationRequestRepository;
@@ -37,9 +39,9 @@ public class CertificationRequestService {
     }
 
     /*
-    We are ignoring the status and issuedOn from the fe as it can be anything.
-    when we create a request the status should always be open and for the current date
-    In addition, if we had an authentication method, most likely I will use that to get employee id
+    We are ignoring the status and issuedOn from the FE as it can be anything.
+    when we create a request, the status should always be open and for the current date.
+    In addition, if we had an authentication method, we should use that to get employee id
     instead of getting it from the request body.
      */
     public EmployeeCertificationDTO createCertificationRequest(CertificationRequest certificationRequest) {
@@ -63,9 +65,8 @@ public class CertificationRequestService {
 
     /*
     Mapping the CertificationRequest to a new DTO object as is a better standard,
-    if we rename columns in the future of the db for example (not likely but never know)
-    we can break the contract with client without a DTO, also sometimes we don't want to expose
-    all the columns to the FE.
+    if we rename columns in the future of the db we can break the contract with the client without a DTO,
+    also sometimes we don't want to expose all the columns to the FE.
     In addition, capped the pagination size to 10 (we can agree to a bigger if we want)
     but we don't want to allow a huge value as then define the purpose of pagination
      */
@@ -95,9 +96,11 @@ public class CertificationRequestService {
 
     public EmployeeCertificationDTO updatePurposeOnCertificationRequests(Long referenceNo, Long employeeId, UpdateCertificationRequestDTO dto) {
         requireValidPurpose(dto.purpose());
+
         CertificationRequest cert = findCertificationRequestById(referenceNo);
         verifyOwnership(cert, employeeId, referenceNo);
         cert.setPurpose(dto.purpose());
+
         EmployeeCertificationDTO result = toDTO(certificationRequestRepository.save(cert));
         log.info("Purpose updated successfully - referenceNo: {}, employeeId: {}", referenceNo, employeeId);
         return result;
@@ -151,8 +154,8 @@ public class CertificationRequestService {
     }
 
     /*
-    Added basic punctuation and spaces as make sense .e.g Embassy of U.S.
-    \n\r will handle multiple lines as this is a text area
+        Added basic punctuation and spaces as make sense .e.g Embassy of U.S.
+        \n\r will handle multiple lines as this is a text area
      */
     private void requireValidAddressTo(String value) {
         if (value == null || value.isEmpty()) {

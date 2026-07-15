@@ -28,10 +28,9 @@ public class CertificationRequestController {
         return certificationRequestService.createCertificationRequest(certificationRequest);
     }
 
-    /*
-    I included the Status and referenceNo in the response, as it makes more sense to have it.
-    User can see the status of the ticket and can point to a specific ticket using the referenceNo
-    We can remove them if is needed
+    /**
+        Included the Status and referenceNo in the response, as it makes more sense to have it.
+        User can see the status of the ticket and can point to a specific ticket using the referenceNo
      */
     @GetMapping("/certification-requests")
     public List<EmployeeCertificationDTO> getEmployeeCertifications(
@@ -49,10 +48,10 @@ public class CertificationRequestController {
                 , referenceNo, addressTo, status).getContent();
     }
 
-    /*
-    returning the details of a single certification request.
-    currently we return EmployeeCertificationDTO, but in the future when we add more fields
-    e.g. description, comments etc we can create a dedicate DTO for this
+    /**
+        returning the details of a single certification request.
+        currently we return EmployeeCertificationDTO, but in the future when we add more fields
+        e.g. description, comments etc we can create a dedicate DTO for this
      */
     @GetMapping("/certification-requests/{referenceNo}")
     public EmployeeCertificationDTO getEmployeeCertificationByReferenceNo(

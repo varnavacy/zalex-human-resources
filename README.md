@@ -46,6 +46,15 @@ To stop the application:
 docker compose down
 ```
 
+## Live Demo
+
+The application is deployed and accessible at:
+
+```
+https://zalex-human-resources-production.up.railway.app
+```
+You can use the Collection src/main/resources/ApiCollection/ZalexHumanResources.zip for testing
+
 ## API Endpoints
 
 | Method | Endpoint | Description |
