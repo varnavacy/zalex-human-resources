@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: zalex_hr
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  config-server:
+    build: ../zalex-config-server
+    ports:
+      - "8888:8888"
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -q --spider http://localhost:8888/actuator/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_CONFIG_IMPORT: "configserver:http://config-server:8888"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
