@@ -7,11 +7,12 @@ import com.kyriakos.compose.project.demo.zalexhumanresources.dto.UpdateCertifica
 import com.kyriakos.compose.project.demo.zalexhumanresources.service.CertificationRequestService;
 import com.kyriakos.compose.project.demo.zalexhumanresources.sorting.SortDirection;
 import com.kyriakos.compose.project.demo.zalexhumanresources.sorting.SortField;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-
+@Slf4j
 @RestController
 public class CertificationRequestController {
 
@@ -23,6 +24,7 @@ public class CertificationRequestController {
 
     @PostMapping("/certification-requests")
     public EmployeeCertificationDTO createCertificationRequest(@RequestBody CertificationRequest certificationRequest) {
+        log.info("POST /certification-requests - employeeId: {}", certificationRequest.getEmployeeId());
         return certificationRequestService.createCertificationRequest(certificationRequest);
     }
 
@@ -42,6 +44,7 @@ public class CertificationRequestController {
             @RequestParam(required = false) String addressTo,
             @RequestParam(required = false) Status status
     ) {
+        log.info("GET /certification-requests - employeeId: {}, page: {}, size: {}, sortBy: {}, sortDirection: {}", employeeId, page, size, sortBy, sortDirection);
         return certificationRequestService.getEmployeeCertifications(employeeId, page, size, sortBy, sortDirection
                 , referenceNo, addressTo, status).getContent();
     }
@@ -52,9 +55,10 @@ public class CertificationRequestController {
     e.g. description, comments etc we can create a dedicate DTO for this
      */
     @GetMapping("/certification-requests/{referenceNo}")
-    public EmployeeCertificationDTO getEmployeeCertificationsByReferenceNo(
+    public EmployeeCertificationDTO getEmployeeCertificationByReferenceNo(
             @PathVariable Long referenceNo
     ) {
+        log.info("GET /certification-requests/{}", referenceNo);
         return certificationRequestService.getEmployeeCertificationByReferenceNo(referenceNo);
     }
 
@@ -65,6 +69,7 @@ public class CertificationRequestController {
             @RequestParam Long employeeId,
             @RequestBody UpdateCertificationRequestDTO updateCertificationRequestDTO
     ) {
+        log.info("PATCH /certification-requests/{} - employeeId: {}", referenceNo, employeeId);
         return certificationRequestService.updatePurposeOnCertificationRequests(referenceNo, employeeId, updateCertificationRequestDTO);
     }
 

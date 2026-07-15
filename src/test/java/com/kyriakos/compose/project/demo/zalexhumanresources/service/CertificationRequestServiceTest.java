@@ -19,7 +19,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -48,7 +48,7 @@ public class CertificationRequestServiceTest {
 
     @Test
     void createCertificationRequest_success() {
-        Date date = new Date();
+        LocalDate date = LocalDate.now();
         CertificationRequest request = CertificationRequest.builder()
                 .addressTo(HR_DEPARTMENT)
                 .purpose(PROOF_OF_EMPLOYMENT)
@@ -159,7 +159,7 @@ public class CertificationRequestServiceTest {
                 .referenceNo(1L)
                 .addressTo(multilineAddress)
                 .purpose(PROOF_OF_EMPLOYMENT)
-                .issuedOn(new Date())
+                .issuedOn(LocalDate.now())
                 .status(Status.OPEN)
                 .employeeId(1L)
                 .build();
@@ -213,7 +213,7 @@ public class CertificationRequestServiceTest {
                 .purpose(PROOF_OF_EMPLOYMENT)
                 .employeeId(employeeId)
                 .status(Status.OPEN)
-                .issuedOn(new Date())
+                .issuedOn(LocalDate.now())
                 .build();
 
         CertificationRequest cert2 = CertificationRequest.builder()
@@ -221,7 +221,7 @@ public class CertificationRequestServiceTest {
                 .purpose("Work Permit")
                 .employeeId(employeeId)
                 .status(Status.OPEN)
-                .issuedOn(new Date())
+                .issuedOn(LocalDate.now())
                 .build();
 
         Page<CertificationRequest> mockPage = new PageImpl<>(List.of(cert1, cert2));
@@ -256,7 +256,7 @@ public class CertificationRequestServiceTest {
                 .purpose(PROOF_OF_EMPLOYMENT)
                 .employeeId(employeeId)
                 .status(Status.OPEN)
-                .issuedOn(new Date())
+                .issuedOn(LocalDate.now())
                 .build();
 
         Page<CertificationRequest> mockPage = new PageImpl<>(List.of(cert));
@@ -281,7 +281,7 @@ public class CertificationRequestServiceTest {
                 .purpose(PROOF_OF_EMPLOYMENT)
                 .employeeId(employeeId)
                 .status(Status.OPEN)
-                .issuedOn(new Date())
+                .issuedOn(LocalDate.now())
                 .build();
 
         Page<CertificationRequest> mockPage = new PageImpl<>(List.of(cert));
@@ -305,7 +305,7 @@ public class CertificationRequestServiceTest {
                 .purpose(PROOF_OF_EMPLOYMENT)
                 .employeeId(employeeId)
                 .status(Status.OPEN)
-                .issuedOn(new Date())
+                .issuedOn(LocalDate.now())
                 .build();
 
         Page<CertificationRequest> mockPage = new PageImpl<>(List.of(cert));
@@ -392,7 +392,7 @@ public class CertificationRequestServiceTest {
                 .purpose(PROOF_OF_EMPLOYMENT)
                 .employeeId(123456L)
                 .status(Status.OPEN)
-                .issuedOn(new Date())
+                .issuedOn(LocalDate.now())
                 .build();
 
         when(certificationRequestRepository.findById(1L)).thenReturn(Optional.of(cert));
@@ -427,7 +427,7 @@ public class CertificationRequestServiceTest {
                 .purpose(PROOF_OF_EMPLOYMENT)
                 .employeeId(123456L)
                 .status(Status.OPEN)
-                .issuedOn(new Date())
+                .issuedOn(LocalDate.now())
                 .build();
 
         CertificationRequest updated = CertificationRequest.builder()
@@ -436,7 +436,7 @@ public class CertificationRequestServiceTest {
                 .purpose(UPDATED_PURPOSE)
                 .employeeId(123456L)
                 .status(Status.OPEN)
-                .issuedOn(new Date())
+                .issuedOn(LocalDate.now())
                 .build();
 
         when(certificationRequestRepository.findById(1L)).thenReturn(Optional.of(cert));
@@ -473,7 +473,7 @@ public class CertificationRequestServiceTest {
                 .purpose(PROOF_OF_EMPLOYMENT)
                 .employeeId(123456L)
                 .status(Status.OPEN)
-                .issuedOn(new Date())
+                .issuedOn(LocalDate.now())
                 .build();
 
         when(certificationRequestRepository.findById(1L)).thenReturn(Optional.of(cert));

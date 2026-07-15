@@ -15,7 +15,7 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.ObjectMapper;
 
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -54,7 +54,7 @@ public class CertificationRequestControllerTest {
         );
 
         EmployeeCertificationDTO response = new EmployeeCertificationDTO(
-                HR_DEPARTMENT, PROOF_OF_EMPLOYMENT, new Date(), 1L, Status.OPEN.name()
+                HR_DEPARTMENT, PROOF_OF_EMPLOYMENT, LocalDate.now(), 1L, Status.OPEN.name(), 1L
         );
 
         when(certificationRequestService.createCertificationRequest(any()))
@@ -124,7 +124,7 @@ public class CertificationRequestControllerTest {
     @Test
     void getEmployeeCertifications_success()  {
         EmployeeCertificationDTO dto = new EmployeeCertificationDTO(
-                HR_DEPARTMENT, PROOF_OF_EMPLOYMENT, new Date(), 1L, "OPEN"
+                HR_DEPARTMENT, PROOF_OF_EMPLOYMENT, LocalDate.now(), 1L, "OPEN", 1L
         );
 
         Page<EmployeeCertificationDTO> mockPage = new PageImpl<>(List.of(dto));
@@ -144,7 +144,7 @@ public class CertificationRequestControllerTest {
     @Test
     void getEmployeeCertifications_filterByStatus_returnsMatchingResults()  {
         EmployeeCertificationDTO dto = new EmployeeCertificationDTO(
-                HR_DEPARTMENT, PROOF_OF_EMPLOYMENT, new Date(), 1L, Status.OPEN.name()
+                HR_DEPARTMENT, PROOF_OF_EMPLOYMENT, LocalDate.now(), 1L, Status.OPEN.name(), 1L
         );
 
         when(certificationRequestService.getEmployeeCertifications(any(), anyInt(), anyInt(), any(), any(), any(), any(), any()))
@@ -161,7 +161,7 @@ public class CertificationRequestControllerTest {
     @Test
     void getEmployeeCertifications_filterByReferenceNo_returnsMatchingResult()  {
         EmployeeCertificationDTO dto = new EmployeeCertificationDTO(
-                HR_DEPARTMENT, PROOF_OF_EMPLOYMENT, new Date(), 5L, Status.OPEN.name()
+                HR_DEPARTMENT, PROOF_OF_EMPLOYMENT, LocalDate.now(), 5L, Status.OPEN.name(), 1L
         );
 
         when(certificationRequestService.getEmployeeCertifications(any(), anyInt(), anyInt(), any(), any(), any(), any(), any()))
@@ -178,7 +178,7 @@ public class CertificationRequestControllerTest {
     @Test
     void getEmployeeCertifications_filterByAddressTo_returnsMatchingResults()  {
         EmployeeCertificationDTO dto = new EmployeeCertificationDTO(
-                "Embassy of Neptune", PROOF_OF_EMPLOYMENT, new Date(), 1L, Status.OPEN.name()
+                "Embassy of Neptune", PROOF_OF_EMPLOYMENT, LocalDate.now(), 1L, Status.OPEN.name(), 1L
         );
 
         when(certificationRequestService.getEmployeeCertifications(any(), anyInt(), anyInt(), any(), any(), any(), any(), any()))
@@ -211,7 +211,7 @@ public class CertificationRequestControllerTest {
     @Test
     void getEmployeeCertificationByReferenceNo_success()  {
         EmployeeCertificationDTO dto = new EmployeeCertificationDTO(
-                HR_DEPARTMENT, PROOF_OF_EMPLOYMENT, new Date(), 1L, Status.OPEN.name()
+                HR_DEPARTMENT, PROOF_OF_EMPLOYMENT, LocalDate.now(), 1L, Status.OPEN.name(), 1L
         );
 
         when(certificationRequestService.getEmployeeCertificationByReferenceNo(1L))
@@ -238,7 +238,7 @@ public class CertificationRequestControllerTest {
     @Test
     void updatePurpose_success() {
         EmployeeCertificationDTO response = new EmployeeCertificationDTO(
-                HR_DEPARTMENT, UPDATED_PURPOSE, new Date(), 1L, Status.OPEN.name()
+                HR_DEPARTMENT, UPDATED_PURPOSE, LocalDate.now(), 1L, Status.OPEN.name(), 123456L
         );
 
         when(certificationRequestService.updatePurposeOnCertificationRequests(any(), any(), any()))
