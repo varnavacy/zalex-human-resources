@@ -36,6 +36,7 @@ public class CertificationRequestControllerTest {
     public static final String STATUS = "status";
     public static final String ADDRESS_TO_PARAM = "addressTo";
     public static final String UPDATED_PURPOSE = "Updated purpose for the certification request resubmission";
+    public static final String CERTIFICATION_REQUESTS = "/certification-requests";
     @Autowired
     private MockMvcTester mockMvc;
 
@@ -60,7 +61,7 @@ public class CertificationRequestControllerTest {
         when(certificationRequestService.createCertificationRequest(any()))
                 .thenReturn(response);
 
-        assertThat(mockMvc.post().uri("/certification-requests")
+        assertThat(mockMvc.post().uri(CERTIFICATION_REQUESTS)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(requestBody)))
                 .hasStatusOk()
@@ -80,7 +81,7 @@ public class CertificationRequestControllerTest {
                 EMPLOYEE_ID, "1"
         );
 
-        assertThat(mockMvc.post().uri("/certification-requests")
+        assertThat(mockMvc.post().uri(CERTIFICATION_REQUESTS)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(requestBody)))
                 .hasStatus(HttpStatus.BAD_REQUEST);
@@ -97,7 +98,7 @@ public class CertificationRequestControllerTest {
                 EMPLOYEE_ID, "1"
         );
 
-        assertThat(mockMvc.post().uri("/certification-requests")
+        assertThat(mockMvc.post().uri(CERTIFICATION_REQUESTS)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(requestBody)))
                 .hasStatus(HttpStatus.BAD_REQUEST);
@@ -115,7 +116,7 @@ public class CertificationRequestControllerTest {
                 EMPLOYEE_ID, "1"
         );
 
-        assertThat(mockMvc.post().uri("/certification-requests")
+        assertThat(mockMvc.post().uri(CERTIFICATION_REQUESTS)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(requestBody)))
                 .hasStatus(HttpStatus.BAD_REQUEST);
@@ -124,7 +125,7 @@ public class CertificationRequestControllerTest {
     @Test
     void getEmployeeCertifications_success()  {
         EmployeeCertificationDTO dto = new EmployeeCertificationDTO(
-                HR_DEPARTMENT, PROOF_OF_EMPLOYMENT, LocalDate.now(), 1L, "OPEN", 1L
+                HR_DEPARTMENT, PROOF_OF_EMPLOYMENT, LocalDate.now(), 1L, Status.OPEN.name(), 1L
         );
 
         Page<EmployeeCertificationDTO> mockPage = new PageImpl<>(List.of(dto));
@@ -132,7 +133,7 @@ public class CertificationRequestControllerTest {
         when(certificationRequestService.getEmployeeCertifications(any(), anyInt(), anyInt(), any(), any(), any(), any(), any()))
                 .thenReturn(mockPage);
 
-        assertThat(mockMvc.get().uri("/certification-requests")
+        assertThat(mockMvc.get().uri(CERTIFICATION_REQUESTS)
                 .param(EMPLOYEE_ID_PARAM, "1"))
                 .hasStatusOk()
                 .bodyJson()
@@ -150,7 +151,7 @@ public class CertificationRequestControllerTest {
         when(certificationRequestService.getEmployeeCertifications(any(), anyInt(), anyInt(), any(), any(), any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(dto)));
 
-        assertThat(mockMvc.get().uri("/certification-requests")
+        assertThat(mockMvc.get().uri(CERTIFICATION_REQUESTS)
                 .param(EMPLOYEE_ID_PARAM, "1")
                 .param(STATUS, Status.OPEN.name()))
                 .hasStatusOk()
@@ -167,7 +168,7 @@ public class CertificationRequestControllerTest {
         when(certificationRequestService.getEmployeeCertifications(any(), anyInt(), anyInt(), any(), any(), any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(dto)));
 
-        assertThat(mockMvc.get().uri("/certification-requests")
+        assertThat(mockMvc.get().uri(CERTIFICATION_REQUESTS)
                 .param(EMPLOYEE_ID_PARAM, "1")
                 .param("referenceNo", "5"))
                 .hasStatusOk()
@@ -184,7 +185,7 @@ public class CertificationRequestControllerTest {
         when(certificationRequestService.getEmployeeCertifications(any(), anyInt(), anyInt(), any(), any(), any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(dto)));
 
-        assertThat(mockMvc.get().uri("/certification-requests")
+        assertThat(mockMvc.get().uri(CERTIFICATION_REQUESTS)
                 .param(EMPLOYEE_ID_PARAM, "1")
                 .param(ADDRESS_TO_PARAM, "Embassy"))
                 .hasStatusOk()
@@ -194,7 +195,7 @@ public class CertificationRequestControllerTest {
 
     @Test
     void getEmployeeCertifications_missingEmployeeId_returnsBadRequest()  {
-        assertThat(mockMvc.get().uri("/certification-requests"))
+        assertThat(mockMvc.get().uri(CERTIFICATION_REQUESTS))
                 .hasStatus(HttpStatus.BAD_REQUEST);
     }
 
@@ -203,7 +204,7 @@ public class CertificationRequestControllerTest {
         when(certificationRequestService.getEmployeeCertifications(any(), anyInt(), anyInt(), any(), any(), any(), any(), any()))
                 .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Employee id field is required"));
 
-        assertThat(mockMvc.get().uri("/certification-requests")
+        assertThat(mockMvc.get().uri(CERTIFICATION_REQUESTS)
                 .param(EMPLOYEE_ID_PARAM, "0"))
                 .hasStatus(HttpStatus.BAD_REQUEST);
     }

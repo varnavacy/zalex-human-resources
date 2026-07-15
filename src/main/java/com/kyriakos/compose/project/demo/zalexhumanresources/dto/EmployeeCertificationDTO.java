@@ -10,7 +10,6 @@ public record EmployeeCertificationDTO (
         @JsonProperty("address_to")
         String addressTo,
         String purpose,
-
         @JsonProperty("issued_on")
         @JsonFormat(pattern = "d/M/yyyy")
         LocalDate issuedOn,
