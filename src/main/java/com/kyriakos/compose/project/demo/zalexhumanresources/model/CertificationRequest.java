@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.Date;
+import java.time.LocalDate;
 /*
     Adding employee Id index as for all the queries in the certification_requests we search with employee id,
     this will make our search more efficient.
@@ -27,7 +27,7 @@ import java.util.Date;
 public class CertificationRequest {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long referenceNo ;
+    private Long referenceNo;
 
     @JsonProperty("address_to")
     @Column(nullable = false)
@@ -37,7 +37,7 @@ public class CertificationRequest {
     @JsonProperty("issued_on")
     @JsonFormat(pattern = "d/M/yyyy")
     @Column(nullable = false)
-    private Date issuedOn;
+    private LocalDate issuedOn;
     @JsonProperty("employee_id")
     @Column(nullable = false)
     private Long employeeId;

@@ -3,7 +3,7 @@ package com.kyriakos.compose.project.demo.zalexhumanresources.dto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.Date;
+import java.time.LocalDate;
 
 public record EmployeeCertificationDTO (
 
@@ -13,10 +13,12 @@ public record EmployeeCertificationDTO (
 
         @JsonProperty("issued_on")
         @JsonFormat(pattern = "d/M/yyyy")
-        Date issuedOn,
+        LocalDate issuedOn,
         @JsonProperty("reference_no")
         Long referenceNo,
-        String status
+        String status,
+        @JsonProperty("employee_id")
+        Long employeeId
 ){
 
 

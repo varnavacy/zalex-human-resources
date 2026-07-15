@@ -7,6 +7,7 @@ import com.kyriakos.compose.project.demo.zalexhumanresources.dto.UpdateCertifica
 import com.kyriakos.compose.project.demo.zalexhumanresources.repositories.CertificationRequestRepository;
 import com.kyriakos.compose.project.demo.zalexhumanresources.sorting.SortDirection;
 import com.kyriakos.compose.project.demo.zalexhumanresources.sorting.SortField;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -17,13 +18,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Date;
-import java.util.Optional;
+import java.time.LocalDate;
+import java.util.regex.Pattern;
 
 import static com.kyriakos.compose.project.demo.zalexhumanresources.specifications.CertificationRequestSpecifications.*;
 
+@Slf4j
 @Service
 public class CertificationRequestService {
+
+    // set it as static final so it will compile once when the class is load and not with every request to validate the address to
+    private static final Pattern ADDRESS_TO_PATTERN = Pattern.compile("^[a-zA-Z0-9 .,'\n\r-]+$");
 
     private final CertificationRequestRepository certificationRequestRepository;
 
@@ -43,15 +48,17 @@ public class CertificationRequestService {
                         .addressTo(certificationRequest.getAddressTo())
                         .purpose(certificationRequest.getPurpose())
                         .status(Status.OPEN)
-                        .issuedOn(new Date())
+                        .issuedOn(LocalDate.now())
                         .employeeId(certificationRequest.getEmployeeId())
                         .build();
         try {
-            return toDTO(certificationRequestRepository.save(cert));
+            EmployeeCertificationDTO result = toDTO(certificationRequestRepository.save(cert));
+            log.info("Certification request created successfully - referenceNo: {}, employeeId: {}", result.referenceNo(), result.employeeId());
+            return result;
         } catch (DataAccessException e) {
+            log.error("Failed to save certification request for employeeId: {}", certificationRequest.getEmployeeId(), e);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to create certification request");
         }
-
     }
 
     /*
@@ -70,33 +77,45 @@ public class CertificationRequestService {
         }
         verifyEmployeeId(employeeId);
 
-        Specification<CertificationRequest> spec = getSpecifications(employeeId,referenceNo,addressTo,status);
+        Specification<CertificationRequest> spec = getSpecifications(employeeId, referenceNo, addressTo, status);
 
         int cappedSize = Math.min(size, 10);
         Sort sort = Sort.by(Sort.Direction.fromString(sortDirection.name()), sortBy.getFieldName());
         Pageable pageable = PageRequest.of(page, cappedSize, sort);
 
-        return certificationRequestRepository.findAll(spec, pageable)
-                .map(this::toDTO);
+        Page<EmployeeCertificationDTO> result = certificationRequestRepository.findAll(spec, pageable).map(this::toDTO);
+        log.info("Found {} certifications for employeeId: {}", result.getTotalElements(), employeeId);
+        return result;
     }
 
     public EmployeeCertificationDTO getEmployeeCertificationByReferenceNo(Long referenceNo) {
-        return certificationRequestRepository.findById(referenceNo)
-                .map(this::toDTO)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Certification request not found"));
+        log.info("Fetching certification request - referenceNo: {}", referenceNo);
+        return toDTO(findCertificationRequestById(referenceNo));
     }
 
-    public EmployeeCertificationDTO updatePurposeOnCertificationRequests(Long referenceNo, Long employeeId, UpdateCertificationRequestDTO updateCertificationRequestDTO) {
-        requireValidPurpose(updateCertificationRequestDTO.purpose());
-        Optional<CertificationRequest> cert = certificationRequestRepository.findById(referenceNo);
-        if (cert.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Certification request not found");
-        }
-        if (employeeId != null && !employeeId.equals(cert.get().getEmployeeId())) {
+    public EmployeeCertificationDTO updatePurposeOnCertificationRequests(Long referenceNo, Long employeeId, UpdateCertificationRequestDTO dto) {
+        requireValidPurpose(dto.purpose());
+        CertificationRequest cert = findCertificationRequestById(referenceNo);
+        verifyOwnership(cert, employeeId, referenceNo);
+        cert.setPurpose(dto.purpose());
+        EmployeeCertificationDTO result = toDTO(certificationRequestRepository.save(cert));
+        log.info("Purpose updated successfully - referenceNo: {}, employeeId: {}", referenceNo, employeeId);
+        return result;
+    }
+
+    private CertificationRequest findCertificationRequestById(Long referenceNo) {
+        return certificationRequestRepository.findById(referenceNo)
+                .orElseThrow(() -> {
+                    log.warn("Certification request not found - referenceNo: {}", referenceNo);
+                    return new ResponseStatusException(HttpStatus.NOT_FOUND, "Certification request not found");
+                });
+    }
+
+    private void verifyOwnership(CertificationRequest cert, Long employeeId, Long referenceNo) {
+        if (employeeId != null && !employeeId.equals(cert.getEmployeeId())) {
+            log.warn("Unauthorized update attempt - referenceNo: {}, requestingEmployeeId: {}, ownerEmployeeId: {}", referenceNo, employeeId, cert.getEmployeeId());
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not authorized to update this certification request");
         }
-        cert.get().setPurpose(updateCertificationRequestDTO.purpose());
-        return toDTO(certificationRequestRepository.save(cert.get()));
     }
 
     private Specification<CertificationRequest> getSpecifications(Long employeeId, Long referenceNo, String addressTo, Status status) {
@@ -115,15 +134,18 @@ public class CertificationRequestService {
 
     private void verifyEmployeeId(Long employeeId) {
         if (employeeId == null || employeeId <= 0) {
+            log.warn("Validation failed - employeeId is missing or invalid: {}", employeeId);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Employee id field is required");
         }
     }
 
     private void requireValidPurpose(String value) {
         if (value == null || value.isEmpty()) {
+            log.warn("Validation failed - purpose is missing");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Purpose field is required");
         }
         if (value.length() < 50) {
+            log.warn("Validation failed - purpose too short: {} characters", value.length());
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Purpose must be at least 50 characters");
         }
     }
@@ -134,9 +156,11 @@ public class CertificationRequestService {
      */
     private void requireValidAddressTo(String value) {
         if (value == null || value.isEmpty()) {
+            log.warn("Validation failed - address to is missing");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Address to field is required");
         }
-        if (!value.matches("^[a-zA-Z0-9 .,'\n\r-]+$")) {
+        if (!ADDRESS_TO_PATTERN.matcher(value).matches()) {
+            log.warn("Validation failed - address to contains invalid characters: {}", value);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Address to field contains invalid characters. Only letters, numbers, spaces, and . , ' - are allowed");
         }
@@ -148,7 +172,8 @@ public class CertificationRequestService {
                 cert.getPurpose(),
                 cert.getIssuedOn(),
                 cert.getReferenceNo(),
-                cert.getStatus().name()
+                cert.getStatus().name(),
+                cert.getEmployeeId()
         );
     }
 
